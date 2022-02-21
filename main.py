@@ -1,8 +1,10 @@
 # Copyright - Roman Chutchev (RChutchev.ru) a.k.a. RChutchev
-# FOR INTERNAL USE ONLY - NON PRODUCTION Ver
+# Beta version
 import configparser
 import os
 import re
+import sys
+import pyautogui
 
 
 def check_file_exist(path, file_name):
@@ -17,30 +19,46 @@ def check_file_exist(path, file_name):
 if __name__ == "__main__":
     config_path = os.path.join(os.getcwd(), 'settings.ini')
     config = configparser.ConfigParser()
-    config.read(config_path)
-    config.sections()
 
-    if 0 == len(str(config['SEP']['SEP_LOG_FOLDER'])) or 0 == len(config['SEP']['SEP_LOG_NAME']) or 0 == len(
-            config['SEP']['ExLOCAL_IPs_MASK']) or 0 == len(config['SEP']['EXCLUDED_IP']) or 0 == len(config['SEP']['NAME_OF_IPs_LIST']):
-        # Config ERROR, use defaults settings
-        print('Ошибка чтения файла конфигурации')
-        sep_path = r'C:\ProgramData\Symantec\Symantec Endpoint Protection\CurrentVersion\Data\Logs'
-        log_name = 'seclog.log'
-        LOCAL_IP_MASK = '192.168.'
-        Ex_IPs = ["8.8.8.8", "8.8.4.4"]
-        PATH_TO_FILE_WITH_IPs = 'C:\PS\\'
-        NAME_OF_IPs_LIST = 'iptoblock.txt'
-    else:
-        # read config
-        sep_path = str(config['SEP']['SEP_LOG_FOLDER'])
-        log_name = config['SEP']['SEP_LOG_NAME']
-        LOCAL_IP_MASK = config['SEP']['ExLOCAL_IPs_MASK']
-        Ex_IPs_str = config['SEP']['EXCLUDED_IP']
+    if not check_file_exist(os.getcwd(), 'settings.ini'):
+        pyautogui.alert(text="Configuration (settings.ini) file not found!", title="Error!")
+        sys.exit(1)
+
+    try:
+        config.read(config_path)
+        config.sections()
+    except configparser.NoSectionError as e:
+        pyautogui.alert(text="Configuration (settings.ini) file error! \n No SEP section.", title="Error!")
+        sys.exit(1)
+
+    sep_path = str(config.get('SEP', 'SEP_LOG_FOLDER',
+                              fallback=r'C:\ProgramData\Symantec\Symantec Endpoint Protection\CurrentVersion\Data\Logs'))
+    log_name = config.get('SEP', 'SEP_LOG_NAME',
+                          fallback='seclog.log')
+    LOCAL_IP_MASK = config.get('SEP', 'ExLOCAL_IPs_MASK',
+                               fallback='192.168.')
+    Ex_IPs_str = config.get('SEP', 'EXCLUDED_IP',
+                            fallback=None)
+    if Ex_IPs_str is not None and len(Ex_IPs_str) != 0:
         Ex_IPs = Ex_IPs_str.split(',')
-        PATH_TO_FILE_WITH_IPs = config['SEP']['PATH_TO_FILE_WITH_IPs']
-        NAME_OF_IPs_LIST = config['SEP']['NAME_OF_IPs_LIST']
+    else:
+        Ex_IPs = ["8.8.8.8", "8.8.4.4"]
+    PATH_TO_FILE_WITH_IPs = config.get('SEP', 'PATH_TO_FILE_WITH_IPs',
+                                       fallback=r'C:\\PS\\')
+    NAME_OF_IPs_LIST = config.get('SEP', 'NAME_OF_IPs_LIST',
+                                  fallback=r'iptoblock.txt')
+
+    DEBUG = False
+    if config.get('SEP', 'DEBUG', fallback=False):
+        DEBUG_ENABLED = config.get('SEP', 'DEBUG', fallback=False)
+        print(DEBUG_ENABLED)
+        if DEBUG_ENABLED == 'True':
+            DEBUG = True
 
     if check_file_exist(sep_path, log_name):
+        if DEBUG:
+            pyautogui.alert(text="Debug is enabled", title="Attention!")
+
         log = open(sep_path + '/' + log_name, 'r', encoding='ANSI')
         lines = log.readlines()
         lst = []
@@ -56,16 +74,20 @@ if __name__ == "__main__":
                         lst.append(result[1])  # Append to list - Result with duplicates
                         lst_clear = list(dict.fromkeys(lst))  # Final result list w/o duplicates
 
-                        # Write to file here
-                        ips_file = open(PATH_TO_FILE_WITH_IPs+NAME_OF_IPs_LIST, 'w+')
-                        for bad_ip in lst_clear:
-                            ips_file.write(bad_ip+'\n')
-                        ips_file.close()
+        # Write to file here
+        if len(lst_clear) != 0:
+            ips_file = open(PATH_TO_FILE_WITH_IPs + NAME_OF_IPs_LIST, 'w+')
+            for bad_ip in lst_clear:
+                ips_file.write(bad_ip + '\n')
+            ips_file.close()
+            if DEBUG:
+                pyautogui.alert(text="Found: " + str(len(lst_clear)) + ' IPs', title="INFO")
+                pyautogui.alert(text="File saved!", title="INFO")
+        else:
+            if DEBUG:
+                pyautogui.alert(text="No IPs found! " + str(len(lst_clear)) + ' IPs', title="INFO")
 
         print(len(lst))  # Print count duplicated values FOR DEBUG
         print(len(lst_clear))  # Print final count in list
     else:
-        print('No SEP log file')
-        exit(666)
-else:
-    exit(1)
+        pyautogui.alert(text="No SEP log file", title="Error!")
