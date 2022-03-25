@@ -1,3 +1,4 @@
+taskkill -IM block.exe /f
 cd C:\ps\
 main.exe
 timeout 5
