@@ -1,7 +1,10 @@
-# sep-seclog-ips-parser
-Symantec Endpoint Protection Seclog IP Analyzer
+# symantec-parser (ex. sep-seclog-ips-parser)
+Symantec Endpoint Protection (SEP) seclog file IP Analyzer
 
-Try to find for attacker IP addresses in the seclog file and block if the number of attacks exceeds a certain number.
+Please note that this version is not suitable for production use, this is a beta version for development purpose only which is used for a personal RDP server with a normal workload.
+
+The script tries to find the attacker's IP addresses in the 'seclog' file and blocks if the number of attacks exceeds a certain number.
+All settings are in the settings.ini file.
 
 [!] Pre-set maximum log file size for SEP
 ![SEP](https://user-images.githubusercontent.com/11131666/160029183-c9ba7846-1b34-4a67-a4a2-2eed5fcbff11.PNG)
@@ -16,4 +19,4 @@ SEP firewall rule blocking:
 Simple and works fine.
 
 
-Settings in the config file.
+Check all settings in the config file before use.
